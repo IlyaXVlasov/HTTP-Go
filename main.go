@@ -2,147 +2,95 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-var errorCount = 0
+var errorCount int
 
 func main() {
-	// Выполняем запрос и обрабатываем статистику
-	fetchAndProcessStats()
-}
-
-func fetchAndProcessStats() {
-	// Отправляем GET запрос к серверу
 	response, err := http.Get("http://srv.msk01.gigacorp.local/_stats")
 	if err != nil {
-		fmt.Printf("Ошибка при выполнении запроса: %v\n", err)
-		handleError()
+		countError()
 		return
 	}
 	defer response.Body.Close()
 
-	// Проверяем статус код
 	if response.StatusCode != 200 {
-		fmt.Printf("Ошибка: получен статус код %d вместо 200\n", response.StatusCode)
-		handleError()
+		countError()
 		return
 	}
 
-	// Читаем тело ответа
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		fmt.Printf("Ошибка при чтении ответа: %v\n", err)
-		handleError()
+		countError()
 		return
 	}
 
-	// Преобразуем тело ответа в строку и разбиваем по запятым
-	bodyStr := strings.TrimSpace(string(body))
-	values := strings.Split(bodyStr, ",")
-	
-	// Проверяем, что получили достаточно значений
-	if len(values) < 7 {
-		handleError()
+	processData(string(body))
+}
+
+func processData(data string) {
+	parts := strings.Split(strings.TrimSpace(data), ",")
+	if len(parts) < 7 {
+		countError()
 		return
 	}
 
-	// Сбрасываем счетчик ошибок при успешном запросе
 	errorCount = 0
 
-	// 1. Обрабатываем Load Average (первое значение - индекс 0)
-	loadAvgStr := strings.TrimSpace(values[0])
-	loadAvg, err := strconv.ParseFloat(loadAvgStr, 64)
+	// Load Average
+	load, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
 	if err != nil {
-		handleError()
+		countError()
 		return
 	}
-
-	// Проверяем Load Average
-	if loadAvg > 30 {
-		fmt.Printf("Load Average is too high: %.2f\n", loadAvg)
+	if load > 30 {
+		fmt.Printf("Load Average is too high: %.2f\n", load)
 	}
 
-	// 2. Обрабатываем память (индексы 1 и 2)
-	totalMemStr := strings.TrimSpace(values[1])
-	totalMem, err := strconv.ParseUint(totalMemStr, 10, 64)
-	if err != nil {
-		handleError()
+	// Memory
+	totalMem, err1 := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 64)
+	usedMem, err2 := strconv.ParseUint(strings.TrimSpace(parts[2]), 10, 64)
+	if err1 != nil || err2 != nil || totalMem == 0 {
+		countError()
 		return
 	}
+	memUsage := float64(usedMem) / float64(totalMem) * 100
+	if memUsage > 80 {
+		fmt.Printf("Memory usage too high: %.2f%%\n", memUsage)
+	}
 
-	usedMemStr := strings.TrimSpace(values[2])
-	usedMem, err := strconv.ParseUint(usedMemStr, 10, 64)
-	if err != nil {
-		handleError()
+	// Disk
+	totalDisk, err1 := strconv.ParseUint(strings.TrimSpace(parts[3]), 10, 64)
+	usedDisk, err2 := strconv.ParseUint(strings.TrimSpace(parts[4]), 10, 64)
+	if err1 != nil || err2 != nil || totalDisk == 0 {
+		countError()
 		return
 	}
-
-	// Проверяем использование памяти
-	if totalMem > 0 {
-		memoryUsagePercent := float64(usedMem) / float64(totalMem) * 100
-		if memoryUsagePercent > 80 {
-			fmt.Printf("Memory usage too high: %.2f%%\n", memoryUsagePercent)
-		}
+	diskUsage := float64(usedDisk) / float64(totalDisk) * 100
+	if diskUsage > 90 {
+		freeDiskMB := (totalDisk - usedDisk) / (1024 * 1024)
+		fmt.Printf("Free disk space is too low: %d Mb left\n", freeDiskMB)
 	}
 
-	// 3. Обрабатываем диск (индексы 3 и 4)
-	totalDiskStr := strings.TrimSpace(values[3])
-	totalDisk, err := strconv.ParseUint(totalDiskStr, 10, 64)
-	if err != nil {
-		handleError()
+	// Network
+	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
+	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
+	if err1 != nil || err2 != nil || totalNet == 0 {
+		countError()
 		return
 	}
-
-	usedDiskStr := strings.TrimSpace(values[4])
-	usedDisk, err := strconv.ParseUint(usedDiskStr, 10, 64)
-	if err != nil {
-		handleError()
-		return
-	}
-
-	// Проверяем использование диска
-	if totalDisk > 0 {
-		freeDisk := totalDisk - usedDisk
-		freeDiskMB := freeDisk / (1024 * 1024) // Конвертируем в мегабайты
-		diskUsagePercent := float64(usedDisk) / float64(totalDisk) * 100
-		
-		if diskUsagePercent > 90 {
-			fmt.Printf("Free disk space is too low: %d Mb left\n", freeDiskMB)
-		}
-	}
-
-	// 4. Обрабатываем сеть (индексы 5 и 6)
-	totalNetStr := strings.TrimSpace(values[5])
-	totalNet, err := strconv.ParseUint(totalNetStr, 10, 64)
-	if err != nil {
-		handleError()
-		return
-	}
-
-	usedNetStr := strings.TrimSpace(values[6])
-	usedNet, err := strconv.ParseUint(usedNetStr, 10, 64)
-	if err != nil {
-		handleError()
-		return
-	}
-
-	// Проверяем загруженность сети
-	if totalNet > 0 {
-		freeNet := totalNet - usedNet
-		freeNetMbit := float64(freeNet) / (1024 * 1024 / 8) // Конвертируем байты/сек в мегабиты/сек
-		netUsagePercent := float64(usedNet) / float64(totalNet) * 100
-		
-		if netUsagePercent > 90 {
-			fmt.Printf("Network bandwidth usage high: %.2f Mbit/s available\n", freeNetMbit)
-		}
+	netUsage := float64(usedNet) / float64(totalNet) * 100
+	if netUsage > 90 {
+		freeNetMbit := float64(totalNet-usedNet) / (1024 * 1024 / 8)
+		fmt.Printf("Network bandwidth usage high: %.2f Mbit/s available\n", freeNetMbit)
 	}
 }
 
-func handleError() {
+func countError() {
 	errorCount++
 	if errorCount >= 3 {
 		fmt.Printf("Unable to fetch server statistic\n")
