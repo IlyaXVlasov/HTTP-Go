@@ -41,17 +41,15 @@ func processData(data string) {
 
 	errorCount = 0
 
-	// Load Average
 	load, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
 	if err != nil {
 		countError()
 		return
 	}
 	if load > 30 {
-		fmt.Printf("Load Average is too high: %.2f\n", load)
+		fmt.Printf("Load Average is too high: %.0f\n", load) // ИСПРАВЛЕНО: %.0f вместо %.2f
 	}
 
-	// Memory
 	totalMem, err1 := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 64)
 	usedMem, err2 := strconv.ParseUint(strings.TrimSpace(parts[2]), 10, 64)
 	if err1 != nil || err2 != nil || totalMem == 0 {
@@ -60,10 +58,9 @@ func processData(data string) {
 	}
 	memUsage := float64(usedMem) / float64(totalMem) * 100
 	if memUsage > 80 {
-		fmt.Printf("Memory usage too high: %.2f%%\n", memUsage)
+		fmt.Printf("Memory usage too high: %.0f%%\n", memUsage) // ИСПРАВЛЕНО: %.0f вместо %.2f
 	}
 
-	// Disk
 	totalDisk, err1 := strconv.ParseUint(strings.TrimSpace(parts[3]), 10, 64)
 	usedDisk, err2 := strconv.ParseUint(strings.TrimSpace(parts[4]), 10, 64)
 	if err1 != nil || err2 != nil || totalDisk == 0 {
@@ -76,7 +73,6 @@ func processData(data string) {
 		fmt.Printf("Free disk space is too low: %d Mb left\n", freeDiskMB)
 	}
 
-	// Network
 	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
 	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
 	if err1 != nil || err2 != nil || totalNet == 0 {
@@ -86,7 +82,7 @@ func processData(data string) {
 	netUsage := float64(usedNet) / float64(totalNet) * 100
 	if netUsage > 90 {
 		freeNetMbit := float64(totalNet-usedNet) / (1024 * 1024 / 8)
-		fmt.Printf("Network bandwidth usage high: %.2f Mbit/s available\n", freeNetMbit)
+		fmt.Printf("Network bandwidth usage high: %.0f Mbit/s available\n", freeNetMbit) // ИСПРАВЛЕНО: %.0f вместо %.2f
 	}
 }
 
