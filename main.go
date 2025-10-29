@@ -6,11 +6,20 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var errorCount int
 
 func main() {
+	// Делаем несколько запросов в цикле
+	for i := 0; i < 10; i++ {
+		fetchAndProcessStats()
+		time.Sleep(1 * time.Second) // Небольшая пауза между запросами
+	}
+}
+
+func fetchAndProcessStats() {
 	response, err := http.Get("http://srv.msk01.gigacorp.local/_stats")
 	if err != nil {
 		countError()
@@ -41,13 +50,13 @@ func processData(data string) {
 
 	errorCount = 0
 
-	// Load Average - обрабатываем независимо
+	// Load Average
 	load, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
 	if err == nil && load > 30 {
 		fmt.Printf("Load Average is too high: %.0f\n", load)
 	}
 
-	// Memory - обрабатываем независимо
+	// Memory
 	totalMem, err1 := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 64)
 	usedMem, err2 := strconv.ParseUint(strings.TrimSpace(parts[2]), 10, 64)
 	if err1 == nil && err2 == nil && totalMem > 0 {
@@ -57,7 +66,7 @@ func processData(data string) {
 		}
 	}
 
-	// Disk - обрабатываем независимо
+	// Disk
 	totalDisk, err1 := strconv.ParseUint(strings.TrimSpace(parts[3]), 10, 64)
 	usedDisk, err2 := strconv.ParseUint(strings.TrimSpace(parts[4]), 10, 64)
 	if err1 == nil && err2 == nil && totalDisk > 0 {
@@ -68,7 +77,7 @@ func processData(data string) {
 		}
 	}
 
-	// Network - обрабатываем независимо
+	// Network
 	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
 	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
 	if err1 == nil && err2 == nil && totalNet > 0 {
