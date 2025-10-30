@@ -18,6 +18,7 @@ func main() {
 	}
 }
 
+
 func fetchAndProcessStats() {
 	response, err := http.Get("http://srv.msk01.gigacorp.local/_stats")
 	if err != nil {
@@ -77,25 +78,27 @@ func processData(data string) {
 		}
 	}
 
-	// Network - ПРАВИЛЬНЫЙ РАСЧЕТ
-	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
-	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
-	if err1 == nil && err2 == nil && totalNet > 0 {
-		netUsagePercent := (usedNet * 100) / totalNet
-		if netUsagePercent > 90 {
-			freeNetBytes := totalNet - usedNet
-			// Байты в секунду -> мегабиты в секунду
-			// 1 мегабит = 1,048,576 бит (1024×1024)
-			// Байты × 8 бит ÷ 1,048,576 бит/мегабит
-			freeNetMbit := (freeNetBytes * 8) / 1048576
-			fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
-		}
-	}
+
+// Network
+totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
+usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
+
+if err1 == nil && err2 == nil && totalNet > 0 {
+    netUsagePercent := (usedNet * 100) / totalNet
+    if netUsagePercent > 90 {
+        freeNetBytes := totalNet - usedNet
+        
+        // Округление до целого
+        freeNetMbit := (freeNetBytes * 8 + 500000) / 1000000
+        
+        fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
+    }
+}
 }
 
 func countError() {
-	errorCount++
-	if errorCount >= 3 {
-		fmt.Printf("Unable to fetch server statistic\n")
-	}
+    errorCount++
+    if errorCount >= 3 {
+        fmt.Printf("Unable to fetch server statistic\n")
+    }
 }
