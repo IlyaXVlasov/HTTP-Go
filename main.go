@@ -12,10 +12,9 @@ import (
 var errorCount int
 
 func main() {
-	// Делаем несколько запросов в цикле
 	for i := 0; i < 10; i++ {
 		fetchAndProcessStats()
-		time.Sleep(1 * time.Second) // Небольшая пауза между запросами
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -56,35 +55,39 @@ func processData(data string) {
 		fmt.Printf("Load Average is too high: %.0f\n", load)
 	}
 
-	// Memory
+	// Memory - ЦЕЛОЧИСЛЕННЫЙ РАСЧЕТ
 	totalMem, err1 := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 64)
 	usedMem, err2 := strconv.ParseUint(strings.TrimSpace(parts[2]), 10, 64)
 	if err1 == nil && err2 == nil && totalMem > 0 {
-		memUsage := float64(usedMem) / float64(totalMem) * 100
-		if memUsage > 80 {
-			fmt.Printf("Memory usage too high: %.0f%%\n", memUsage)
+		// Целочисленный расчет процентов использования памяти
+		memUsagePercent := (usedMem * 100) / totalMem
+		if memUsagePercent > 80 {
+			fmt.Printf("Memory usage too high: %d%%\n", memUsagePercent)
 		}
 	}
 
-	// Disk
+	// Disk - целочисленный расчет
 	totalDisk, err1 := strconv.ParseUint(strings.TrimSpace(parts[3]), 10, 64)
 	usedDisk, err2 := strconv.ParseUint(strings.TrimSpace(parts[4]), 10, 64)
 	if err1 == nil && err2 == nil && totalDisk > 0 {
-		diskUsage := float64(usedDisk) / float64(totalDisk) * 100
-		if diskUsage > 90 {
-			freeDiskMB := (totalDisk - usedDisk) / (1024 * 1024)
+		diskUsagePercent := (usedDisk * 100) / totalDisk
+		if diskUsagePercent > 90 {
+			freeDiskBytes := totalDisk - usedDisk
+			freeDiskMB := freeDiskBytes / (1024 * 1024)
 			fmt.Printf("Free disk space is too low: %d Mb left\n", freeDiskMB)
 		}
 	}
 
-	// Network
+	// Network - целочисленный расчет
 	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
 	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
 	if err1 == nil && err2 == nil && totalNet > 0 {
-		netUsage := float64(usedNet) / float64(totalNet) * 100
-		if netUsage > 90 {
-			freeNetMbit := float64(totalNet-usedNet) / (1024 * 1024 / 8)
-			fmt.Printf("Network bandwidth usage high: %.0f Mbit/s available\n", freeNetMbit)
+		netUsagePercent := (usedNet * 100) / totalNet
+		if netUsagePercent > 90 {
+			freeNetBytes := totalNet - usedNet
+			// Байты в секунду -> мегабиты в секунду
+			freeNetMbit := (freeNetBytes * 8) / 1000000
+			fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
 		}
 	}
 }
