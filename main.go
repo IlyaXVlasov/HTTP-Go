@@ -18,7 +18,6 @@ func main() {
 	}
 }
 
-
 func fetchAndProcessStats() {
 	response, err := http.Get("http://srv.msk01.gigacorp.local/_stats")
 	if err != nil {
@@ -78,26 +77,23 @@ func processData(data string) {
 		}
 	}
 
+	// Network
+	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
+	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
 
-// Network
-totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
-usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
-
-if err1 == nil && err2 == nil && totalNet > 0 {
-    netUsagePercent := (usedNet * 100) / totalNet
-    if netUsagePercent > 90 {
-        freeNetBytes := totalNet - usedNet
-        
-		freeNetMbit := freeNetBytes / 1000000
-        
-        fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
-    }
-}
-}
+	if err1 == nil && err2 == nil && totalNet > 0 {
+		netUsagePercent := (usedNet * 100) / totalNet
+		if netUsagePercent > 90 {
+			freeNetBytes := totalNet - usedNet
+			freeNetMbit := freeNetBytes / 1000000
+			fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
+		}
+	}
+} // ← ЭТА СКОБКА ЗАКРЫВАЕТ processData
 
 func countError() {
-    errorCount++
-    if errorCount >= 3 {
-        fmt.Printf("Unable to fetch server statistic\n")
-    }
+	errorCount++
+	if errorCount >= 3 {
+		fmt.Printf("Unable to fetch server statistic\n")
+	}
 }
