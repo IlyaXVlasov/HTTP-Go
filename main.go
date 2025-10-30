@@ -55,18 +55,17 @@ func processData(data string) {
 		fmt.Printf("Load Average is too high: %.0f\n", load)
 	}
 
-	// Memory - ЦЕЛОЧИСЛЕННЫЙ РАСЧЕТ
+	// Memory
 	totalMem, err1 := strconv.ParseUint(strings.TrimSpace(parts[1]), 10, 64)
 	usedMem, err2 := strconv.ParseUint(strings.TrimSpace(parts[2]), 10, 64)
 	if err1 == nil && err2 == nil && totalMem > 0 {
-		// Целочисленный расчет процентов использования памяти
 		memUsagePercent := (usedMem * 100) / totalMem
 		if memUsagePercent > 80 {
 			fmt.Printf("Memory usage too high: %d%%\n", memUsagePercent)
 		}
 	}
 
-	// Disk - целочисленный расчет
+	// Disk
 	totalDisk, err1 := strconv.ParseUint(strings.TrimSpace(parts[3]), 10, 64)
 	usedDisk, err2 := strconv.ParseUint(strings.TrimSpace(parts[4]), 10, 64)
 	if err1 == nil && err2 == nil && totalDisk > 0 {
@@ -78,7 +77,7 @@ func processData(data string) {
 		}
 	}
 
-	// Network - целочисленный расчет
+	// Network - ПРАВИЛЬНЫЙ РАСЧЕТ
 	totalNet, err1 := strconv.ParseUint(strings.TrimSpace(parts[5]), 10, 64)
 	usedNet, err2 := strconv.ParseUint(strings.TrimSpace(parts[6]), 10, 64)
 	if err1 == nil && err2 == nil && totalNet > 0 {
@@ -86,7 +85,9 @@ func processData(data string) {
 		if netUsagePercent > 90 {
 			freeNetBytes := totalNet - usedNet
 			// Байты в секунду -> мегабиты в секунду
-			freeNetMbit := (freeNetBytes * 8) / 1000000
+			// 1 мегабит = 1,048,576 бит (1024×1024)
+			// Байты × 8 бит ÷ 1,048,576 бит/мегабит
+			freeNetMbit := (freeNetBytes * 8) / 1048576
 			fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
 		}
 	}
