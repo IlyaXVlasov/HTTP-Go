@@ -88,8 +88,7 @@ if err1 == nil && err2 == nil && totalNet > 0 {
     if netUsagePercent > 90 {
         freeNetBytes := totalNet - usedNet
         
-        // Округление до целого
-        freeNetMbit := (freeNetBytes * 8 + 500000) / 1000000
+		freeNetMbit := freeNetBytes / 1000000
         
         fmt.Printf("Network bandwidth usage high: %d Mbit/s available\n", freeNetMbit)
     }
